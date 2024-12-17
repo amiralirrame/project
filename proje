@@ -1,0 +1,116 @@
+import Trie "mo:base/Trie";
+import Text "mo:base/Text";
+import Nat32 "mo:base/Nat32";
+import Bool "mo:base/Bool";
+import Option "mo:base/Option";
+
+actor {
+
+  type Subject = Text; // e.g., "Math", "Science", "History"
+  type Gender = {
+    #Male;
+    #Female;
+  };
+
+  type TeacherId = Nat32;
+  type Teacher = {
+    name : Text;
+    age : Nat32;
+    subject : Subject;
+    isRetired : Bool;
+    languages : [Text];
+    gender : Gender;
+    yearsOfExperience : Nat32;
+    achievements : [Text];
+  };
+
+  type ResponseTeacher = {
+    name : Text;
+    age : Nat32;
+    subject : Subject;
+    isRetired : Bool;
+    id : Nat32;
+    languages : [Text];
+    gender : Gender;
+    yearsOfExperience : Nat32;
+    achievements : [Text];
+  };
+
+  private stable var nextTeacherId : TeacherId = 0;
+
+  private stable var teachers : Trie.Trie<TeacherId, Teacher> = Trie.empty();
+
+  public func addTeacher(teacher : Teacher) : async Text {
+    let teacherId = nextTeacherId;
+    nextTeacherId += 1;
+    teachers := Trie.replace(
+      teachers,
+      key(teacherId),
+      Nat32.equal,
+      ?teacher,
+    ).0;
+    return "Teacher Added Successfully";
+  };
+
+  public func updateTeacher(teacherId : TeacherId, teacher : Teacher) : async Bool {
+    let result = Trie.find(teachers, key(teacherId), Nat32.equal);
+    let exists = Option.isSome(result);
+    if (exists) {
+      teachers := Trie.replace(
+        teachers,
+        key(teacherId),
+        Nat32.equal,
+        ?teacher,
+      ).0;
+    };
+    return exists;
+  };
+
+  public func deleteTeacher(teacherId : TeacherId) : async Bool {
+    let result = Trie.find(teachers, key(teacherId), Nat32.equal);
+    let exists = Option.isSome(result);
+    if (exists) {
+      teachers := Trie.replace(
+        teachers,
+        key(teacherId),
+        Nat32.equal,
+        null,
+      ).0;
+    };
+    return exists;
+  };
+
+  public func retireTeacher(teacherId : TeacherId) : async Bool {
+    let result = Trie.find(teachers, key(teacherId), Nat32.equal);
+    let exists = Option.isSome(result);
+    if (exists) {
+      switch result {
+        case (?teacher) {
+          let retiredTeacher = {
+            name = teacher.name;
+            age = teacher.age;
+            subject = teacher.subject;
+            isRetired = true;
+            languages = teacher.languages;
+            gender = teacher.gender;
+            yearsOfExperience = teacher.yearsOfExperience;
+            achievements = teacher.achievements;
+          };
+          teachers := Trie.replace(
+            teachers,
+            key(teacherId),
+            Nat32.equal,
+            ?retiredTeacher,
+          ).0;
+        };
+        case _ {};
+      }
+    };
+    return exists;
+  };
+
+  private func key(x : TeacherId) : Trie.Key<TeacherId> {
+    return { hash = x; key = x };
+  };
+
+};
